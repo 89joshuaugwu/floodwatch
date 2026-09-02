@@ -25,8 +25,13 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
-      allow write: if getRole() == "admin" || (request.auth.uid == uid &&
-        request.resource.data.role == resource.data.role);
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.role == "resident";
+      allow update: if getRole() == "admin" || (request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.role == resource.data.role);
+      allow delete: if getRole() == "admin";
     }
 
     match /notifications/{uid}/items/{id} {
