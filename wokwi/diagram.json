@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "author": "FloodWatch",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-hc-sr04",
+      "id": "ultrasonic",
+      "top": -60,
+      "left": 200,
+      "attrs": { "distance": "50" }
+    }
+  ],
+  "connections": [
+    ["esp:5V", "ultrasonic:VCC", "red", []],
+    ["esp:GND.1", "ultrasonic:GND", "black", []],
+    ["esp:D5", "ultrasonic:TRIG", "green", []],
+    ["esp:D18", "ultrasonic:ECHO", "yellow", []]
+  ],
+  "dependencies": {}
+}
