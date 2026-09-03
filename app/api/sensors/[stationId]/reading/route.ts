@@ -1,2 +1,52 @@
-import {NextRequest,NextResponse} from "next/server";import {adminDb,Timestamp} from "@/lib/firebase-admin";import {checkThresholdsAndAlert} from "@/lib/alerts";
-export async function POST(req:NextRequest,{params}:{params:Promise<{stationId:string}>}){try{if(!process.env.DEVICE_API_KEY||req.headers.get("x-device-key")!==process.env.DEVICE_API_KEY)return NextResponse.json({error:"Unauthorized device."},{status:401});const body=await req.json();const waterLevel=Number(body.waterLevel),rainfall=Number(body.rainfall??0);if(!Number.isFinite(waterLevel)||waterLevel<0||!Number.isFinite(rainfall)||rainfall<0)return NextResponse.json({error:"waterLevel and rainfall must be non-negative numbers."},{status:400});const {stationId}=await params;const station=adminDb.collection("stations").doc(stationId);if(!(await station.get()).exists)return NextResponse.json({error:"Station not found."},{status:404});await station.collection("readings").doc().set({waterLevel,rainfall,timestamp:Timestamp.now()});await checkThresholdsAndAlert(stationId,waterLevel);return NextResponse.json({ok:true},{status:201})}catch(error){console.error(error);return NextResponse.json({error:"Unable to process reading."},{status:500})}}
+import { NextRequest, NextResponse } from "next/server";
+import { adminDb, Timestamp } from "@/lib/firebase-admin";
+import { checkThresholdsAndAlert } from "@/lib/alerts";
+
+interface ReadingBody {
+  waterLevel: number;
+  rainfall: number;
+}
+
+export async function POST(request: NextRequest, { params }: { params: Promise<{ stationId: string }> }) {
+  const { stationId } = await params;
+
+  const deviceKey = request.headers.get("X-Device-Key");
+  if (!deviceKey || deviceKey !== process.env.DEVICE_API_KEY) {
+    return NextResponse.json({ error: "Unauthorized device." }, { status: 401 });
+  }
+
+  let body: ReadingBody;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+  }
+
+  const { waterLevel, rainfall } = body;
+  if (typeof waterLevel !== "number" || Number.isNaN(waterLevel)) {
+    return NextResponse.json({ error: "waterLevel must be a number." }, { status: 400 });
+  }
+  const safeRainfall = typeof rainfall === "number" && !Number.isNaN(rainfall) ? rainfall : 0;
+
+  try {
+    const stationRef = adminDb.collection("stations").doc(stationId);
+    const stationDoc = await stationRef.get();
+    if (!stationDoc.exists) {
+      return NextResponse.json({ error: `Unknown station: ${stationId}` }, { status: 404 });
+    }
+
+    const readingRef = stationRef.collection("readings").doc();
+    await readingRef.set({
+      waterLevel,
+      rainfall: safeRainfall,
+      timestamp: Timestamp.now(),
+    });
+
+    await checkThresholdsAndAlert(stationId, waterLevel);
+
+    return NextResponse.json({ ok: true, readingId: readingRef.id }, { status: 201 });
+  } catch (err) {
+    console.error("Failed to ingest sensor reading:", err);
+    return NextResponse.json({ error: "Internal server error." }, { status: 500 });
+  }
+}

@@ -1,2 +1,39 @@
-import Link from "next/link"; import type {Station} from "@/types"; import SeverityBadge from "@/components/ui/SeverityBadge"; import LevelGauge from "@/components/molecules/LevelGauge";
-export default function StationCard({station}:{station:Station}){const severity=station.severity??"normal";return <Link href={`/stations/${station.id}`} className="card station-card"><LevelGauge small level={station.currentLevel??0} thresholds={station.thresholds} severity={severity}/><div style={{minWidth:0,flex:1}}><div className="row"><h3>{station.name}</h3><SeverityBadge severity={severity}/></div><p className="muted">{station.riverName}</p><p className="mono muted">{station.currentLevel??"—"}cm · Rain {station.rainfall??0}mm</p><p className="muted">Updated {station.updatedAt??"waiting for sensor"}</p></div></Link>}
+import Link from "next/link";
+import { Card } from "@/components/ui/Card";
+import { SeverityBadge } from "@/components/ui/SeverityBadge";
+import { LevelGauge } from "@/components/molecules/LevelGauge";
+import type { StationWithLatestReading } from "@/types";
+
+export function StationCard({ station }: { station: StationWithLatestReading }) {
+  const { latestReading, severity, thresholds } = station;
+
+  return (
+    <Link href={`/stations/${station.id}`} className="block focus:outline-none focus:ring-2 focus:ring-primary rounded-xl">
+      <Card className="p-5 hover:shadow-md transition-shadow duration-150 h-full">
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div>
+            <h3 className="font-display text-lg font-semibold text-text-primary">{station.name}</h3>
+            <p className="text-sm text-text-secondary">{station.riverName}</p>
+          </div>
+          <SeverityBadge severity={severity} size="sm" />
+        </div>
+
+        {latestReading ? (
+          <>
+            <LevelGauge
+              waterLevel={latestReading.waterLevel}
+              dangerCm={thresholds.dangerCm}
+              severity={severity}
+              size="sm"
+            />
+            <p className="text-xs text-text-secondary mt-3">
+              Last updated {new Date(latestReading.timestamp).toLocaleString()}
+            </p>
+          </>
+        ) : (
+          <p className="text-sm text-text-secondary py-4">Waiting for first sensor reading</p>
+        )}
+      </Card>
+    </Link>
+  );
+}
