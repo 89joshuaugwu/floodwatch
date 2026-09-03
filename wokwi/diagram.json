@@ -4,13 +4,13 @@
   "editor": "wokwi",
   "parts": [
     { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": {} },
-    { "type": "wokwi-hc-sr04", "id": "ultrasonic", "top": -60, "left": 200, "attrs": { "distance": "50" } }
+    { "type": "wokwi-hc-sr04", "id": "ultrasonic", "top": -20, "left": 280, "attrs": { "distance": "50" } }
   ],
   "connections": [
-    ["esp:5V", "ultrasonic:VCC", "red", []],
-    ["esp:GND.1", "ultrasonic:GND", "black", []],
-    ["esp:D5", "ultrasonic:TRIG", "green", []],
-    ["esp:D18", "ultrasonic:ECHO", "yellow", []]
+    [ "esp:5V", "ultrasonic:VCC", "red", [ "v0" ] ],
+    [ "esp:GND.1", "ultrasonic:GND", "black", [ "v0" ] ],
+    [ "esp:5", "ultrasonic:TRIG", "green", [ "v0" ] ],
+    [ "esp:18", "ultrasonic:ECHO", "blue", [ "v0" ] ]
   ],
   "dependencies": {}
 }

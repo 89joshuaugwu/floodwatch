@@ -1,0 +1,14 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function getRole() { return request.auth != null ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role : null; }
+    match /stations/{stationId} {
+      allow read: if true;
+      allow write: if getRole() == 'admin';
+      match /readings/{readingId} { allow read: if true; allow write: if false; }
+    }
+    match /alerts/{alertId} { allow read: if true; allow write: if getRole() == 'admin'; }
+    match /users/{uid} { allow read: if request.auth != null && request.auth.uid == uid; allow write: if getRole() == 'admin' || (request.auth.uid == uid && request.resource.data.role == resource.data.role); }
+    match /notifications/{uid}/items/{id} { allow read, update: if request.auth != null && request.auth.uid == uid; allow create: if request.auth != null; }
+  }
+}
