@@ -48,6 +48,7 @@ export default function SignupPage() {
               <span className="block text-sm font-medium mb-1">Email</span>
               <input
                 type="email"
+                autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -58,6 +59,7 @@ export default function SignupPage() {
               <span className="block text-sm font-medium mb-1">Phone (optional)</span>
               <input
                 type="tel"
+                autoComplete="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className="w-full rounded-lg border border-border px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary"
@@ -67,6 +69,7 @@ export default function SignupPage() {
               <span className="block text-sm font-medium mb-1">Password</span>
               <input
                 type="password"
+                autoComplete="new-password"
                 required
                 minLength={6}
                 value={password}

@@ -36,7 +36,8 @@ service cloud.firestore {
 
     match /notifications/{uid}/items/{id} {
       allow read, update: if request.auth != null && request.auth.uid == uid;
-      allow create: if request.auth != null;
+      // Notifications are generated only by the server's Admin SDK.
+      allow create: if false;
     }
   }
 }

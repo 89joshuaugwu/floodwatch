@@ -32,8 +32,11 @@ export default function NewStationPage() {
     e.preventDefault();
     const latNum = Number(lat);
     const lngNum = Number(lng);
-    if (!name.trim() || !riverName.trim() || Number.isNaN(latNum) || Number.isNaN(lngNum)) {
-      toast.error("Fill in all fields with valid values.");
+    if (
+      !name.trim() || !riverName.trim() || !Number.isFinite(latNum) || !Number.isFinite(lngNum) ||
+      latNum < -90 || latNum > 90 || lngNum < -180 || lngNum > 180
+    ) {
+      toast.error("Enter a station name, river name, and valid latitude/longitude.");
       return;
     }
 
@@ -97,6 +100,8 @@ export default function NewStationPage() {
               <input
                 required
                 type="number"
+                min={-90}
+                max={90}
                 step="any"
                 value={lat}
                 onChange={(e) => setLat(e.target.value)}
@@ -108,6 +113,8 @@ export default function NewStationPage() {
               <input
                 required
                 type="number"
+                min={-180}
+                max={180}
                 step="any"
                 value={lng}
                 onChange={(e) => setLng(e.target.value)}

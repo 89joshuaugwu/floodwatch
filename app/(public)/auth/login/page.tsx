@@ -44,6 +44,7 @@ export default function LoginPage() {
               <span className="block text-sm font-medium mb-1">Email</span>
               <input
                 type="email"
+                autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -54,6 +55,7 @@ export default function LoginPage() {
               <span className="block text-sm font-medium mb-1">Password</span>
               <input
                 type="password"
+                autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

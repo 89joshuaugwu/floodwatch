@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
-import { watchAuthState, getAppUser } from "@/lib/auth";
+import { doc, onSnapshot } from "firebase/firestore";
+import { watchAuthState } from "@/lib/auth";
+import { db } from "@/lib/firebase";
 import type { AppUser } from "@/types";
 
 interface AuthState {
@@ -21,15 +23,42 @@ export function useCurrentUser(): AuthState {
   const [state, setState] = useState<AuthState>({ firebaseUser: null, appUser: null, loading: true });
 
   useEffect(() => {
-    const unsub = watchAuthState(async (user) => {
+    let stopProfileListener: (() => void) | undefined;
+    let missingProfileTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const unsub = watchAuthState((user) => {
+      stopProfileListener?.();
+      if (missingProfileTimer) clearTimeout(missingProfileTimer);
+
       if (!user) {
         setState({ firebaseUser: null, appUser: null, loading: false });
         return;
       }
-      const appUser = await getAppUser(user.uid);
-      setState({ firebaseUser: user, appUser, loading: false });
+
+      setState({ firebaseUser: user, appUser: null, loading: true });
+      stopProfileListener = onSnapshot(
+        doc(db, "users", user.uid),
+        (snapshot) => {
+          if (snapshot.exists()) {
+            if (missingProfileTimer) clearTimeout(missingProfileTimer);
+            setState({ firebaseUser: user, appUser: snapshot.data() as AppUser, loading: false });
+            return;
+          }
+
+          // A sign-up creates the Auth account just before its profile doc.
+          // Give that write a brief chance to arrive before route guards act.
+          missingProfileTimer = setTimeout(() => {
+            setState({ firebaseUser: user, appUser: null, loading: false });
+          }, 1500);
+        },
+        () => setState({ firebaseUser: user, appUser: null, loading: false })
+      );
     });
-    return unsub;
+    return () => {
+      unsub();
+      stopProfileListener?.();
+      if (missingProfileTimer) clearTimeout(missingProfileTimer);
+    };
   }, []);
 
   return state;

@@ -23,10 +23,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const { waterLevel, rainfall } = body;
-  if (typeof waterLevel !== "number" || Number.isNaN(waterLevel)) {
-    return NextResponse.json({ error: "waterLevel must be a number." }, { status: 400 });
+  if (!Number.isFinite(waterLevel) || waterLevel < 0 || waterLevel > 1000) {
+    return NextResponse.json({ error: "waterLevel must be a finite number from 0 to 1000." }, { status: 400 });
   }
-  const safeRainfall = typeof rainfall === "number" && !Number.isNaN(rainfall) ? rainfall : 0;
+  const safeRainfall = Number.isFinite(rainfall) && rainfall >= 0 && rainfall <= 1000 ? rainfall : 0;
 
   try {
     const stationRef = adminDb.collection("stations").doc(stationId);

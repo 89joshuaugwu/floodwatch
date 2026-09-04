@@ -38,6 +38,9 @@ firebase-adminsdk.json
 *.tsbuildinfo
 next-env.d.ts
 
+# PlatformIO build output for the local Wokwi simulator
+wokwi/.pio/
+
 
 
 floodwatch-bbd39-firebase-adminsdk.json
