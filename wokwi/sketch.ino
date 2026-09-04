@@ -32,13 +32,13 @@ void loop() {
   if (millis() - lastReadTime >= READ_INTERVAL_MS) {
     lastReadTime = millis();
 
-    digitalWrite(TRIG_PIN, LOW); delayMicroseconds(2);
-    digitalWrite(TRIG_PIN, HIGH); delayMicroseconds(10);
-    digitalWrite(TRIG_PIN, LOW);
-
     long duration = pulseIn(ECHO_PIN, HIGH);
     float distanceCm = duration * 0.0343 / 2;
     float waterLevelCm = STATION_HEIGHT_CM - distanceCm;
+
+    Serial.print("duration="); Serial.print(duration);
+    Serial.print(" distanceCm="); Serial.print(distanceCm);
+    Serial.print(" waterLevelCm="); Serial.println(waterLevelCm);
 
     sendReading(waterLevelCm);
   }
