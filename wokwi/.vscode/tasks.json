@@ -1,0 +1,11 @@
+{
+  "version": "2.0.0",
+  "tasks": [{
+    "label": "FloodWatch: Build Wokwi firmware",
+    "type": "process",
+    "command": "node",
+    "args": ["${workspaceFolder}/../scripts/wokwi-project.cjs", "build"],
+    "group": { "kind": "build", "isDefault": true },
+    "problemMatcher": ["$gcc"]
+  }]
+}

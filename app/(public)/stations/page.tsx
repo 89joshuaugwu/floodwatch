@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { PublicShell } from "@/components/shells/PublicShell";
 import { StationCard } from "@/components/molecules/StationCard";
+import { getLiveDataError, LiveDataNotice } from "@/components/molecules/LiveDataNotice";
 import { StationMap } from "@/components/organisms/StationMap";
 import { Spinner } from "@/components/ui/Spinner";
 import { watchStationsWithLatestReadings } from "@/lib/stations";
@@ -12,10 +13,15 @@ import { List, Map as MapIcon } from "lucide-react";
 export default function StationsPage() {
   const [stations, setStations] = useState<StationWithLatestReading[] | null>(null);
   const [view, setView] = useState<"list" | "map">("list");
+  const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    return watchStationsWithLatestReadings(setStations);
-  }, []);
+    return watchStationsWithLatestReadings(setStations, (err) => {
+      console.error("Station updates failed", err);
+      setError(getLiveDataError(err, "Station readings"));
+    });
+  }, [attempt]);
 
   return (
     <PublicShell>
@@ -45,10 +51,12 @@ export default function StationsPage() {
         </div>
       </div>
 
-      {stations === null ? (
+      <LiveDataNotice error={error} onRetry={() => { setError(null); setAttempt((value) => value + 1); }} />
+
+      {stations === null && error ? null : stations === null ? (
         <Spinner label="Loading stations…" />
       ) : stations.length === 0 ? (
-        <p className="text-text-secondary py-10 text-center">No monitoring stations configured yet</p>
+        !error && <p className="text-text-secondary py-10 text-center">No monitoring stations configured yet</p>
       ) : view === "list" ? (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {stations.map((station) => (

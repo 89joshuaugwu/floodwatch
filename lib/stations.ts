@@ -9,6 +9,7 @@ import {
   limit,
   collectionGroup,
   type DocumentData,
+  type FirestoreError,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getSeverityTier } from "@/lib/alerts-client";
@@ -33,7 +34,8 @@ function toStation(id: string, data: DocumentData): Station {
  * information" note.
  */
 export function watchStationsWithLatestReadings(
-  callback: (stations: StationWithLatestReading[]) => void
+  callback: (stations: StationWithLatestReading[]) => void,
+  onError?: (error: FirestoreError) => void
 ): () => void {
   const unsubReadingListeners = new Map<string, () => void>();
   let latestStations: Station[] = [];
@@ -80,16 +82,16 @@ export function watchStationsWithLatestReadings(
             stationId: station.id,
             waterLevel: data.waterLevel,
             rainfall: data.rainfall,
-            timestamp: data.timestamp?.toMillis?.() ?? Date.now(),
+            timestamp: data.timestamp?.toMillis?.() ?? 0,
           });
         }
         emit();
-      });
+      }, onError);
       unsubReadingListeners.set(station.id, unsubReading);
     }
 
     emit();
-  });
+  }, onError);
 
   return () => {
     unsubStations();
@@ -97,14 +99,18 @@ export function watchStationsWithLatestReadings(
   };
 }
 
-export function watchStation(stationId: string, callback: (station: Station | null) => void): () => void {
+export function watchStation(
+  stationId: string,
+  callback: (station: Station | null) => void,
+  onError?: (error: FirestoreError) => void
+): () => void {
   return onSnapshot(doc(db, "stations", stationId), (snap) => {
     if (!snap.exists()) {
       callback(null);
       return;
     }
     callback(toStation(snap.id, snap.data()));
-  });
+  }, onError);
 }
 
 // Unused directly but kept for potential future cross-station queries

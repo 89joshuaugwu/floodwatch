@@ -9,8 +9,10 @@
   "connections": [
     ["esp:5V", "ultrasonic:VCC", "red", []],
     ["esp:GND.1", "ultrasonic:GND", "black", []],
-    ["esp:D5", "ultrasonic:TRIG", "green", []],
-    ["esp:D18", "ultrasonic:ECHO", "yellow", []]
+    ["esp:5", "ultrasonic:TRIG", "green", []],
+    ["esp:18", "ultrasonic:ECHO", "yellow", []],
+    ["esp:TX", "$serialMonitor:RX", "", []],
+    ["esp:RX", "$serialMonitor:TX", "", []]
   ],
   "dependencies": {}
 }

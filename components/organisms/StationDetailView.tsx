@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, doc, onSnapshot, orderBy, query, limit } from "firebase/firestore";
+import { collection, onSnapshot, orderBy, query, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getSeverityTier } from "@/lib/alerts-client";
 import { LevelGauge } from "@/components/molecules/LevelGauge";
+import { getLiveDataError, LiveDataNotice, ReadingFreshness } from "@/components/molecules/LiveDataNotice";
 import { TrendChart } from "@/components/molecules/TrendChart";
 import { AlertRow } from "@/components/molecules/AlertRow";
 import { SeverityBadge } from "@/components/ui/SeverityBadge";
@@ -24,6 +25,10 @@ interface Props {
 export function StationDetailView({ station, isResident, isSubscribed, onSubscribeToggle, subscribeBusy }: Props) {
   const [readings, setReadings] = useState<Reading[] | null>(null);
   const [alerts, setAlerts] = useState<Alert[] | null>(null);
+  const [readingsError, setReadingsError] = useState<string | null>(null);
+  const [alertsError, setAlertsError] = useState<string | null>(null);
+  const [readingsAttempt, setReadingsAttempt] = useState(0);
+  const [alertsAttempt, setAlertsAttempt] = useState(0);
 
   // Live readings — updates automatically as new sensor data arrives,
   // per PROMPT.md Phase 3 ("real-time via onSnapshot ... without a manual
@@ -43,14 +48,18 @@ export function StationDetailView({ station, isResident, isSubscribed, onSubscri
             stationId: station.id,
             waterLevel: data.waterLevel,
             rainfall: data.rainfall,
-            timestamp: data.timestamp?.toMillis?.() ?? Date.now(),
+            timestamp: data.timestamp?.toMillis?.() ?? 0,
           };
         })
         .reverse();
       setReadings(items);
+      setReadingsError(null);
+    }, (error) => {
+      console.error("Sensor reading updates failed", error);
+      setReadingsError(getLiveDataError(error, "Sensor readings"));
     });
     return unsub;
-  }, [station.id]);
+  }, [station.id, readingsAttempt]);
 
   useEffect(() => {
     const alertsQuery = query(
@@ -75,9 +84,13 @@ export function StationDetailView({ station, isResident, isSubscribed, onSubscri
         })
         .filter((a) => a.stationId === station.id);
       setAlerts(items);
+      setAlertsError(null);
+    }, (error) => {
+      console.error("Station alert updates failed", error);
+      setAlertsError(getLiveDataError(error, "Station alerts"));
     });
     return unsub;
-  }, [station.id, station.name]);
+  }, [station.id, station.name, alertsAttempt]);
 
   const latest = readings && readings.length > 0 ? readings[readings.length - 1]! : null;
   const severity = latest ? getSeverityTier(latest.waterLevel, station.thresholds) : "normal";
@@ -93,19 +106,18 @@ export function StationDetailView({ station, isResident, isSubscribed, onSubscri
           {latest && <SeverityBadge severity={severity} />}
         </div>
 
-        {readings === null ? (
+        <LiveDataNotice showOffline={false} error={readingsError} onRetry={() => { setReadingsError(null); setReadingsAttempt((value) => value + 1); }} />
+
+        {readings === null && readingsError ? null : readings === null ? (
           <Spinner label="Loading station data…" />
         ) : latest ? (
           <>
             <LevelGauge waterLevel={latest.waterLevel} dangerCm={station.thresholds.dangerCm} severity={severity} />
-            <dl className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6 text-sm">
+            <ReadingFreshness timestamp={latest.timestamp} />
+            <dl className="grid grid-cols-2 gap-4 mt-6 text-sm">
               <div>
                 <dt className="text-text-secondary">Rainfall</dt>
                 <dd className="font-mono-data font-medium">{latest.rainfall} mm</dd>
-              </div>
-              <div>
-                <dt className="text-text-secondary">Last updated</dt>
-                <dd className="font-mono-data font-medium">{new Date(latest.timestamp).toLocaleString()}</dd>
               </div>
               <div>
                 <dt className="text-text-secondary">Danger threshold</dt>
@@ -128,16 +140,19 @@ export function StationDetailView({ station, isResident, isSubscribed, onSubscri
 
       <Card className="p-6">
         <h2 className="font-display text-lg font-semibold mb-4">Trend — last readings</h2>
-        {readings === null ? <Spinner /> : <TrendChart readings={readings} />}
+        {readings === null && readingsError ? (
+          <p className="text-sm text-text-secondary">The trend is unavailable while sensor readings cannot be loaded.</p>
+        ) : readings === null ? <Spinner /> : <TrendChart readings={readings} />}
       </Card>
 
       <Card>
         <CardBody className="pt-5">
           <h2 className="font-display text-lg font-semibold mb-2">Recent alerts</h2>
-          {alerts === null ? (
+          <LiveDataNotice showOffline={false} error={alertsError} onRetry={() => { setAlertsError(null); setAlertsAttempt((value) => value + 1); }} />
+          {alerts === null && alertsError ? null : alerts === null ? (
             <Spinner />
           ) : alerts.length === 0 ? (
-            <p className="text-sm text-text-secondary py-4">No alerts triggered — all stations normal</p>
+            <p className="text-sm text-text-secondary py-4">No alerts for this station in the recent alert feed.</p>
           ) : (
             alerts.map((alert) => <AlertRow key={alert.id} alert={alert} />)
           )}

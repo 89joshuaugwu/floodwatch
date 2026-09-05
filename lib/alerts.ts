@@ -43,36 +43,41 @@ export async function checkRisingTrend(
 }
 
 /**
- * Creates a new active alert for a station/severity, or refreshes an
- * existing unresolved one of the same severity so we don't spam duplicate
- * alert documents while a station stays elevated.
+ * Reuses an unresolved alert at the same severity. The transaction prevents
+ * simultaneous readings from creating duplicate alerts. Pending notification
+ * delivery can be retried by the next reading.
  */
 export async function createOrUpdateAlert(
   stationId: string,
   severity: Exclude<Severity, "normal">,
   cause: AlertCause
-): Promise<void> {
+): Promise<{ id: string; notificationsPending: boolean }> {
   const alertsRef = adminDb.collection("alerts");
 
-  const existing = await alertsRef
+  const activeAlerts = alertsRef
     .where("stationId", "==", stationId)
     .where("severity", "==", severity)
     .where("resolvedAt", "==", null)
-    .limit(1)
-    .get();
+    .limit(1);
 
-  if (!existing.empty) {
-    // Already an active alert at this severity — nothing new to notify.
-    return;
-  }
+  return adminDb.runTransaction(async (transaction) => {
+    const existing = await transaction.get(activeAlerts);
+    if (!existing.empty) {
+      const alert = existing.docs[0]!;
+      return { id: alert.id, notificationsPending: !alert.data().notificationsSentAt };
+    }
 
-  await alertsRef.add({
-    stationId,
-    severity,
-    cause,
-    triggeredAt: Timestamp.now(),
-    resolvedAt: null,
-    acknowledgedBy: null,
+    const alertRef = alertsRef.doc();
+    transaction.create(alertRef, {
+      stationId,
+      severity,
+      cause,
+      triggeredAt: Timestamp.now(),
+      resolvedAt: null,
+      acknowledgedBy: null,
+      notificationsSentAt: null,
+    });
+    return { id: alertRef.id, notificationsPending: true };
   });
 }
 
@@ -90,7 +95,7 @@ export async function checkThresholdsAndAlert(stationId: string, waterLevel: num
   const thresholds: StationThresholds = station.thresholds;
 
   const tier = getSeverityTier(waterLevel, thresholds);
-  const isRisingFast = await checkRisingTrend(stationId, thresholds);
+  const isRisingFast = tier === "normal" && await checkRisingTrend(stationId, thresholds);
 
   // A station that is still numerically "normal" but rising unusually fast
   // gets escalated to "watch" early. A station already at watch/warning/
@@ -99,7 +104,10 @@ export async function checkThresholdsAndAlert(stationId: string, waterLevel: num
 
   if (effectiveTier !== "normal") {
     const cause: AlertCause = isRisingFast && tier === "normal" ? "rising_trend" : "threshold";
-    await createOrUpdateAlert(stationId, effectiveTier, cause);
-    await notifySubscribedResidents(stationId, effectiveTier);
+    const alert = await createOrUpdateAlert(stationId, effectiveTier, cause);
+    if (alert.notificationsPending) {
+      await notifySubscribedResidents(stationId, effectiveTier, { alertId: alert.id, waterLevel, cause });
+      await adminDb.collection("alerts").doc(alert.id).update({ notificationsSentAt: Timestamp.now() });
+    }
   }
 }

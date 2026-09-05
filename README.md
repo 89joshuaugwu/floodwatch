@@ -75,17 +75,22 @@ firestore.rules
 
 ## 4. Wokwi hardware simulation
 
-1. Go to https://wokwi.com → new ESP32 project.
-2. Paste `wokwi/sketch.ino` into `sketch.ino`.
-3. Add an HC-SR04 ultrasonic sensor, wire per the sketch's comments
-   (Trig → GPIO 5, Echo → GPIO 18), mounted facing down toward the water.
-4. Update `API_ENDPOINT` in the sketch to your deployed
-   `https://<your-app>.vercel.app/api/sensors/<stationId>/reading` and set
-   `DEVICE_API_KEY` to match your env var.
-5. Run the simulation. Use Wokwi's "Editing HC-SR04" panel to manually
-   change the simulated distance — this raises/lowers the reported water
-   level in real time, and the dashboard updates live via Firestore's
-   `onSnapshot`.
+For local VS Code simulation, run `npm run wokwi:build` from this folder,
+select `wokwi/wokwi.toml` with **Wokwi: Select Config File**, then restart the
+simulator. Rebuild after changing the sketch; Wokwi runs the compiled binary.
+
+For online Wokwi, create a new ESP32 project and paste both files from
+`sample-wokwiweb/`: `sketch.ino` and `diagram.json`. They are refreshed from
+the local source by `npm run wokwi:build` or `npm run wokwi:sync`.
+
+Set `API_ENDPOINT` and `DEVICE_API_KEY` to match your deployed server and
+station. Click the HC-SR04 in the running diagram and adjust **Distance**:
+80, 50, and 20 cm should report 20, 50, and 80 cm water levels. Distances
+of 100 cm or more all report zero. Sensor values print every second and
+uploads occur every 10 seconds plus network time. Look for `POST 201`.
+
+See [wokwi/README.md](wokwi/README.md) for local website networking,
+firmware troubleshooting, and read-only `npm run sensor:diagnose` checks.
 
 ## 5. Testing the alert pipeline manually
 

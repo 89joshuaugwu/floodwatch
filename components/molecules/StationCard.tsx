@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { SeverityBadge } from "@/components/ui/SeverityBadge";
 import { LevelGauge } from "@/components/molecules/LevelGauge";
+import { ReadingFreshness } from "@/components/molecules/LiveDataNotice";
 import type { StationWithLatestReading } from "@/types";
 
 export function StationCard({ station }: { station: StationWithLatestReading }) {
@@ -15,7 +16,7 @@ export function StationCard({ station }: { station: StationWithLatestReading }) 
             <h3 className="font-display text-lg font-semibold text-text-primary">{station.name}</h3>
             <p className="text-sm text-text-secondary">{station.riverName}</p>
           </div>
-          <SeverityBadge severity={severity} size="sm" />
+          {latestReading && <SeverityBadge severity={severity} size="sm" />}
         </div>
 
         {latestReading ? (
@@ -26,9 +27,7 @@ export function StationCard({ station }: { station: StationWithLatestReading }) 
               severity={severity}
               size="sm"
             />
-            <p className="text-xs text-text-secondary mt-3">
-              Last updated {new Date(latestReading.timestamp).toLocaleString()}
-            </p>
+            <ReadingFreshness timestamp={latestReading.timestamp} />
           </>
         ) : (
           <p className="text-sm text-text-secondary py-4">Waiting for first sensor reading</p>

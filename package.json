@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "seed:stations": "node scripts/seed-stations.cjs"
+    "seed:stations": "node scripts/seed-stations.cjs",
+    "wokwi:build": "node scripts/wokwi-project.cjs build",
+    "wokwi:check": "node scripts/wokwi-project.cjs check",
+    "wokwi:sync": "node scripts/wokwi-project.cjs sync",
+    "sensor:diagnose": "node scripts/diagnose-sensor.cjs"
   },
   "dependencies": {
     "next": "^16.2.0",
