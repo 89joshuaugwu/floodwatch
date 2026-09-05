@@ -9,8 +9,8 @@ const char* WIFI_SSID = "Wokwi-GUEST";
 const char* WIFI_PASSWORD = "";
 // Set these to your deployed app URL, station ID, and DEVICE_API_KEY.
 // For your local website with the VS Code gateway, use:
-// http://host.wokwi.internal:3000/api/sensors/8q4KBKLwbTt4ubN8Bni5/reading
-const char* API_ENDPOINT = "https://floodwatchlive.vercel.app/api/sensors/8q4KBKLwbTt4ubN8Bni5/reading";
+// http://host.wokwi.internal:3000/api/sensors/coal-camp-ekulu-crossing/reading
+const char* API_ENDPOINT = "https://floodwatchlive.vercel.app/api/sensors/coal-camp-ekulu-crossing/reading";
 const char* DEVICE_API_KEY = "flood-esp32-secret-key";
 
 constexpr uint8_t TRIG_PIN = 5;
