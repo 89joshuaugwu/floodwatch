@@ -40,16 +40,6 @@ async function main() {
   });
 
   const publicBase = `https://firestore.googleapis.com/v1/projects/${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}/databases/(default)/documents`;
-  // Verify absence first, then exercise server-side Firebase access without
-  // writing a reading. The ingest route must return 404 for a missing station.
-  const absentStationId = 'floodwatch-read-only-diagnostic-8e42d7a9';
-  const absent = await probe('Verify diagnostic station is absent (expected 404)', `${publicBase}/stations/${absentStationId}`);
-  if (absent?.error?.code === 404) {
-    await probe('Server Firebase access (expected 404, no reading saved)', `${base}/api/sensors/${absentStationId}/reading`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Device-Key': sketchKey },
-      body: JSON.stringify({ waterLevel: 0, rainfall: 0 }),
-    });
-  }
   const station = await probe('Public station access', `${publicBase}/stations/${stationId}`);
   if (station?.fields) {
     console.log(`Station name: ${station.fields.name?.stringValue}`);
